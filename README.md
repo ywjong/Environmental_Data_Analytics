@@ -30,3 +30,5 @@ OR
 
 6. If a conflict arises during merge, update the file(s) to your liking, stage them and commit them.
 >>>>>>> 6b3336d7a4a82495467c3e73549a0602fa0a826d
+
+#Apparently the merge conflict will always occur if we are trying to merge same lines.... so I will just accept this conflicted merge and push it up back to cloud.
