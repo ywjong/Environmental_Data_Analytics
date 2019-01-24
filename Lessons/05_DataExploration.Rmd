@@ -107,12 +107,12 @@ colnames(USGS.flow.data) <- c("agency_cd", "site_no", "datetime",
                               "gage.height.mean", "gage.height.mean.approval")
 str(USGS.flow.data)
 dim(USGS.flow.data)
-length(USGS.flow.data)
+length(USGS.flow.data) #number of columns
 
-head(USGS.flow.data)
+head(USGS.flow.data) #default is 6 rows, need to specify if you want to look more than or less than 6 rows 
 head(USGS.flow.data, 10)
 tail(USGS.flow.data, 5)
-USGS.flow.data[30000:30005, c(3, 8, 14)]
+USGS.flow.data[30000:30005, c(3, 8, 14)] #select rows (before comma) and columns (after comma)
 
 class(USGS.flow.data$datetime)
 class(USGS.flow.data$discharge.mean)
@@ -120,6 +120,7 @@ class(USGS.flow.data$gage.height.mean)
 
 summary(USGS.flow.data)
 summary(USGS.flow.data$discharge.mean)
+summary(USGS.flow.data$discharge.mean.approval)
 summary(USGS.flow.data$gage.height.mean)
 
 ```
