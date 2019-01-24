@@ -11,7 +11,7 @@ Data analytics course for Duke University. Course code: ENV 872L
 2. Clone your forked repository onto your local drive. 
 3. To pull updates from this repository, add this repository as an upstream remote: 
 
-`git remote add upstream https://github.com/KateriSalk/Environmental_Data_Analytics`
+`git remote add upstream`
 
 4. To verify that this repository is the upstream remote: 
 
