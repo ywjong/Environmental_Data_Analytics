@@ -53,26 +53,35 @@ matrix1[ , 3] #
 matrix1[c(12, 14)] #
 matrix1[c(12:14)] #
 matrix1[2:4, 1:3] #
+matrix1[1:3]
+matrix1[1:3,]
 
 cells <- c(1, 26, 24, 68)
 rnames <- c("R1", "R2")
 cnames <- c("C1", "C2") 
+#by column is default for matrix unless you use byrow to interfere
 matrix4 <- matrix(cells, nrow = 2, ncol = 2, byrow = TRUE,
   dimnames = list(rnames, cnames)) # 
 matrix4
+#Even if you just specify only nrow or ncol, R can populate matrix on its own. But you cannot not put both nrow or ncol. IF the elements are not enough to fill in the matrix (e.g. 3 elements for 2*2 matrix), the matrix will be formed with a warning, and the elements will loop over again
 
 # Lists ---- 
 list1 <- list(name = "Maria", mynumbers = vector1, mymatrix = matrix1, age = 5.3); list1
 list1[[2]]
+#We use double square for lists
 
 # Data Frames ----
-d <- c(1, 2, 3, 4) # What type of vector?
-e <- c("red", "white", "red", NA) # What type of vector?
-f <- c(TRUE, TRUE, TRUE, FALSE) # What type of vector?
-dataframe1 <- data.frame(d,e,f) #
+d <- c(1, 2, 3, 4) # What type of vector? numeric
+e <- c("red", "white", "red", NA) # What type of vector? character
+f <- c(TRUE, TRUE, TRUE, FALSE) # What type of vector? logical
+dataframe1 <- data.frame(d,e,f) #Data frame is up in data in global environment, while vectors are in the global environment values
 names(dataframe1) <- c("ID","Color","Passed"); View(dataframe1) # 
 
-dataframe1[1:2] # 
+#NA is seen as missing value
+
+dataframe1[1:2] # It displays first two columns. In matrix, it will display first two elements instead
+dataframe1[,1:2] #Displays first two columns
+dataframe1[1:2,] #display first two rows
 dataframe1[c("ID","Passed")] # 
 dataframe1$Color # 
 
@@ -122,7 +131,7 @@ If a package is already installed, you will need to load it every session. You c
 
 ```{r}
 # We will use the packages dplyr and ggplot2 regularly. 
-#install.packages("dplyr") # comment out install commands, use only when needed and re-comment
+#install.packages("dplyr") # comment out install commands, use only when needed and re-comment, because we only need to install package once
 #install.packages("ggplot2")
 
 library(dplyr)
@@ -131,6 +140,7 @@ library(ggplot2)
 # Some packages are umbrellas under which other packages are loaded
 #install.packages(tidyverse)
 library(tidyverse)
+#R won's store two versions of same packages, so whatever version last installed will replace any older versions.
 ```
 What happens in the console when you load a package?
 
@@ -147,9 +157,9 @@ functionname <- function(){
 }
 ```
 
-A single ingredient recipe: 
+A single ingredient recipe. The function itself will not be stored in global environment, but the outputs will.
 ```{r}
-# Write the recipe
+# Write the recipe, it does not get displayed in global environment
 recipe1 <- function(x){
   mix <- x*2
   return(mix)
@@ -162,7 +172,7 @@ simplemeal <- recipe1(5)
 simplemeal
 ```
 
-Two single ingredient recipes, baked at the same time: 
+Two single ingredient recipes, baked at the same time. The output will be stored in global environment.
 ```{r}
 recipe2 <- function(x){
   mix1 <- x*2
@@ -214,7 +224,7 @@ meal2 <- recipe4(2); meal2
 meal3 <- recipe5(3); meal3
 
 recipe6 <- function(x){
-  ifelse(x<3, x*2, x/2)
+  ifelse(x<3, x*2, x/2) #Like con function in arcgis
   
 }
 
