@@ -33,7 +33,4 @@ OR
 >>>>>>> 6b3336d7a4a82495467c3e73549a0602fa0a826d
 
 #Apparently the merge conflict will always occur if we are trying to merge same lines.... so I will just accept this conflicted merge and push it up back to cloud.
-=======
 
-*testing merge error with Taylor*
->>>>>>> 4d1d9dea435d466d83ea27c9fa2ca15256399596
