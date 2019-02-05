@@ -47,7 +47,7 @@ What is the best way to wrangle data? There are multiple ways to arrive at a spe
 
 ## WRANGLING IN R: DPLYR
 
-`dplyr` is a package in R that includes functions for data manipulation (i.e., data wrangling or data munging). `dplyr` is included in the tidyverse package, so you should already have it installed on your machine. The functions act as verbs for data wrangling processes. For more information, run this line of code:
+`dplyr` is a package in R that includes functions for data manipulation (i.e., data wrangling or data munging). `dplyr` is included in the tidyverse package, so you should already have it installed on your machine. The d in 'dplyr' refers to dataframe. The functions act as verbs for data wrangling processes. For more information, run this line of code:
 
 ```{r, results = "hide"}
 vignette("dplyr")
@@ -73,28 +73,29 @@ class(NTL.phys.data$lakeid)
 class(NTL.phys.data$depth)
 
 # matrix filtering
-NTL.phys.data.surface1 <- NTL.phys.data[NTL.phys.data$depth == 0,]
+NTL.phys.data.surface1 <- NTL.phys.data[NTL.phys.data$depth == 0,]#the value behind comma specifies which column to use. When it is blank, it means we choose all columns
 
 # dplyr filtering
 NTL.phys.data.surface2 <- filter(NTL.phys.data, depth == 0)
 NTL.phys.data.surface3 <- filter(NTL.phys.data, depth < 0.25)
 
 # Did the methods arrive at the same result?
-head(NTL.phys.data.surface1)
+head(NTL.phys.data.surface1) #In subsetted data, each row still retain their row name
 dim(NTL.phys.data.surface1)
-head(NTL.phys.data.surface2)
+head(NTL.phys.data.surface2) #When using dplyr filter, the filtered row will be assigned a new row name
 dim(NTL.phys.data.surface2)
 head(NTL.phys.data.surface3)
 dim(NTL.phys.data.surface3)
 
 # Choose multiple conditions to filter
 summary(NTL.phys.data$lakename)
-NTL.phys.data.PeterPaul1 <- filter(NTL.phys.data, lakename == "Paul Lake" | lakename == "Peter Lake")
+NTL.phys.data.PeterPaul1 <- filter(NTL.phys.data, lakename == "Paul Lake" | lakename == "Peter Lake") #The factor Paul lake and peter lake has to be in quotation mark so that R can recognize it
 NTL.phys.data.PeterPaul2 <- filter(NTL.phys.data, lakename != "Central Long Lake" & 
                                      lakename != "Crampton Lake" & lakename != "East Long Lake" &
                                      lakename != "Hummingbird Lake" & lakename != "Tuesday Lake" &
                                      lakename != "Ward Lake" & lakename != "West Long Lake")
 NTL.phys.data.PeterPaul3 <- filter(NTL.phys.data, lakename %in% c("Paul Lake", "Peter Lake"))
+# The %in% is a piping operator 
 
 # Choose a range of conditions of a numeric or integer variable
 summary(NTL.phys.data$daynum)
@@ -105,17 +106,18 @@ NTL.phys.data.JunethruOctober4 <- filter(NTL.phys.data, daynum %in% c(152:304))
 
 # Exercise: 
 # filter NTL.phys.data for the year 1999
-# what code do you need to use, based on the class of the variable?
+# what code do you need to use, based on the class of the variable? Use filter with numbers
 class(NTL.phys.data$year4)
+NTL.phys.data.1999 <- filter(NTL.phys.data, year4 == 1999)
 
 # Exercise: 
 # filter NTL.phys.data for Tuesday Lake from 1990 through 1999.
-
+NTL.phys.data.TuesLake9099 <- filter(NTL.phys.data, year4 %in% c(1990:1999) & lakename == "Tuesday Lake")
 
 ```
 Question: Why don't we filter using row numbers?
 
-> ANSWER: 
+> ANSWER: Because that implies we have to manually inspect the rows in order to make meaningful filtering. Also data might change when we add in new rows or re-load the csv, so using row numbers is not exactly reproducible.
 
 ### Arrange
 
@@ -123,12 +125,13 @@ Arranging allows us to change the order of rows in our dataset. By default, the 
 
 ```{r}
 NTL.phys.data.depth.ascending <- arrange(NTL.phys.data, depth)
-NTL.phys.data.depth.descending <- arrange(NTL.phys.data, desc(depth))
+NTL.phys.data.depth.descending <- arrange(NTL.phys.data, desc(depth)) #desc = descending
 
 # Exercise: 
 # Arrange NTL.phys.data by temperature, in descending order. 
-# Which dates, lakes, and depths have the highest temperatures?
-
+# Which dates, lakes, and depths have the highest temperatures? June to July, East Long Lake and Hummingbird Lake, 0m to 0.5m depth
+NTL.phys.data.temp.descending <- arrange(NTL.phys.data, desc(temperature_C))
+view(NTL.phys.data.temp.descending)
 
 ```
 ### Select
@@ -137,7 +140,8 @@ Selecting allows us to choose certain columns (variables) in our dataset.
 
 ```{r}
 NTL.phys.data.temps <- select(NTL.phys.data, lakename, sampledate:temperature_C)
-
+#NTL.phys.data.temps <- select(NTL.phys.data, lakename & sampledate & temperature_C) #This leads to error because select has more restricted use
+?select
 ```
 ### Mutate
 
@@ -160,7 +164,7 @@ NTL.phys.data.processed <-
   filter(lakename == "Paul Lake" | lakename == "Peter Lake") %>%
   select(lakename, sampledate:temperature_C) %>%
   mutate(temperature_F = (temperature_C*9/5) + 32)
-  
+  #piping can be faster than for loop
 ```
 
 Notice that we did not place the dataset name inside the wrangling function but rather at the beginning.
@@ -169,6 +173,7 @@ Notice that we did not place the dataset name inside the wrangling function but 
 
 ```{r}
 write.csv(NTL.phys.data.PeterPaul1, row.names = FALSE, file = "./Data/Processed/NTL-LTER_Lake_ChemistryPhysics_PeterPaul_Processed.csv")
+#if row.names = TRUE, the first column will be all the row numbers
 ```
 
 ## CLOSING DISCUSSION
