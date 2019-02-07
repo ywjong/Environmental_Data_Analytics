@@ -1,6 +1,6 @@
 ---
 title: "Assignment 4: Data Wrangling"
-author: "Student Name"
+author: "Ying Wei Jong"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
@@ -34,8 +34,20 @@ The completed exercise is due on Thursday, 7 February, 2019 before class begins.
 
 ```{r}
 #1
+getwd()
+library(tidyverse)
+library(lubridate) #For question 8
+O3_2017 <- read.csv("./Data/Raw/EPAair_O3_NC2017_raw.csv")
+O3_2018 <- read.csv("./Data/Raw/EPAair_O3_NC2018_raw.csv")
+PM25_2017 <- read.csv("./Data/Raw/EPAair_PM25_NC2017_raw.csv")
+PM25_2018 <- read.csv("./Data/Raw/EPAair_PM25_NC2018_raw.csv")
 
-#2
+#2 I will not repeat the same line over all four datasets, it occupies too much space
+head(O3_2017)
+summary(O3_2018)
+str(PM25_2017)
+dim(PM25_2018)
+
 ```
 
 ## Wrangle individual datasets to create processed files.
@@ -46,21 +58,37 @@ The completed exercise is due on Thursday, 7 February, 2019 before class begins.
 
 ```{r}
 #3
+O3_2017$Date <- as.Date(O3_2017$Date, format = "%m/%d/%y")
+O3_2018$Date <- as.Date(O3_2018$Date, format = "%m/%d/%y")
+PM25_2017$Date <- as.Date(PM25_2017$Date, format = "%m/%d/%y")
+PM25_2018$Date <- as.Date(PM25_2018$Date, format = "%m/%d/%y")
 
 #4
+O3_2017_Pro <- select(O3_2017, Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
+O3_2018_Pro <- select(O3_2018, Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
+PM25_2017_Pro <- select(PM25_2017, Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
+PM25_2018_Pro <- select(PM25_2018, Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
 
 #5
+PM25_2017_Pro$AQS_PARAMETER_DESC <- "PM2.5"
+PM25_2018_Pro$AQS_PARAMETER_DESC <- "PM2.5"
 
 #6
-
+write.csv(O3_2017_Pro, row.names=FALSE, file = "./Data/Processed/EPAair_O3_NC2017_processed.csv")
+write.csv(O3_2018_Pro, row.names=FALSE, file = "./Data/Processed/EPAair_O3_NC2018_processed.csv")
+write.csv(PM25_2017_Pro, row.names = FALSE, file =
+"./Data/Processed/EPAair_PM25_NC2017_processed.csv")
+write.csv(PM25_2018_Pro, row.names = FALSE, file =
+"./Data/Processed/EPAair_PM25_NC2018_processed.csv")
 ```
 
 
 ## Combine datasets
-7. Combine the four datasets with `rbind`. Make sure your column names are identical prior to running this code. 
+7. Combine the four datasets with `rbind`. Make sure your column names are identical prior to running this code.
+
 8. Wrangle your new dataset with a pipe function (%>%) so that it fills the following conditions: 
 
-* Sites: Blackstone, Bryson City, Castle Hayne, Leggett, Triple Oak
+* Sites: Blackstone, Bryson City, Triple Oak
 * Add columns for "Month" and "Year" by parsing your "Date" column (hint: `separate` function or `lubridate` package)
 
 9. Spread your datasets such that AQI values for ozone and PM2.5 are in separate columns. Each location on a specific date should now occupy only one row.
@@ -68,13 +96,30 @@ The completed exercise is due on Thursday, 7 February, 2019 before class begins.
 11. Save your processed dataset with the following file name: "EPAair_O3_PM25_NC1718_Processed.csv"
 
 ```{r}
+#7
+O3_com <- full_join(O3_2017_Pro,O3_2018_Pro)
+PM25_com <- full_join(PM25_2017_Pro,PM25_2018_Pro)
+Combined_data <- full_join(O3_com, PM25_com)
+str(Combined_data)
+
 #8
+Combined_data <- 
+  Combined_data %>%
+  filter(Site.Name == "Blackstone" | Site.Name == "Bryson City" | Site.Name == "Triple Oak") %>%
+  mutate(Date, month= month(Date)) %>%
+  mutate(Date, year=year(Date))
+
+#separate(Combined_data, Date, c("Year", "Month", "d")) <- cannot specify df name otherwise command won't work
+
+#Apparently I cannot specify the name of dataframe again when doing the lubridate/separate in piping operations, otherwise I receive this message (`var` must evaluate to a single number or a column name, not a list) or other types of error
 
 #9
+Combined_data <- spread(Combined_data, AQS_PARAMETER_DESC, DAILY_AQI_VALUE)
 
 #10
-
+dim(Combined_data)
 #11
+write.csv(Combined_data, row.names = FALSE, file = "./Data/Processed/EPAair_O3_PM25_NC1718_Processed.csv")
 
 ```
 
@@ -82,15 +127,34 @@ The completed exercise is due on Thursday, 7 February, 2019 before class begins.
 ## Generate summary tables
 12. Use the split-apply-combine strategy to generate two new data frames: 
 a. A summary table of mean AQI values for O3 and PM2.5 by month
-b. A summary table of the mean, minimum, and maximum concentrations of O3 and PM2.5 for each site
+b. A summary table of the mean, minimum, and maximum aqi of O3 and PM2.5 for each site
 13. Display the data frames.
 
 ```{r}
 #12a
+MonthlyAQI <-
+  Combined_data %>%
+  group_by(month) %>%
+  filter(!is.na(Ozone) & !is.na(PM2.5)) %>%
+  summarise(meanO3 = mean(Ozone),
+            meanPM25 =mean(PM2.5))
 
+#Have to remove NAs otherwise the resulting summary tables are full of NAs
 #12b
+SiteAQI <-
+  Combined_data %>%
+  group_by(Site.Name) %>%
+  filter(!is.na(Ozone) & !is.na(PM2.5)) %>%
+  summarise(meanO3 = mean(Ozone),
+            maxO3 = max(Ozone),
+            minO3 = min(Ozone),
+            meanPM25 = mean(PM2.5),
+            maxPM25 = max(PM2.5),
+            minPM25 = min(PM2.5))
+#Apparently Triple oak does not have complete (non NA) entries for both O3 and PM2.5
 
 #13
-
+MonthlyAQI
+SiteAQI
 ```
 

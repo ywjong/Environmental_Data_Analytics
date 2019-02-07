@@ -43,15 +43,18 @@ colnames(NTL.nutrient.data.PeterPaul)
 dim(NTL.nutrient.data.PeterPaul)
 summary(NTL.nutrient.data.PeterPaul$comments)
 class(NTL.nutrient.data.PeterPaul$sampledate)
+#factors does not get filled with NA; numeric gets filled with NA
+#can used droplevels command to remove the factors not used anymore (e.g. names of other lakes that are not paul and peter). Can be useful in graphing and stats anylysis
 NTL.nutrient.data.PeterPaul$sampledate <- as.Date(NTL.nutrient.data.PeterPaul$sampledate, format = "%m/%d/%y")
 
-# Save processed nutrient file
+# Save processed nutrient file. "./" means go down one folder
 write.csv(NTL.nutrient.data.PeterPaul, row.names = FALSE, file = "./Data/Processed/NTL-LTER_Lake_Nutrients_PeterPaul_Processed.csv")
 
 # Remove columns that are not of interest for analysis
 NTL.phys.data.PeterPaul.skinny <- select(NTL.phys.data.PeterPaul, 
                                          lakename, daynum, year4, sampledate:irradianceDeck)
-  
+#If you want to select the columns to remove (instead of adding), you can add minus sign in front of a column names
+#e.g. select(NTL.phys.data.PeterPaul, -lakename, -daynum, -year4, -sampledate:irradianceDeck)
 NTL.nutrient.data.PeterPaul.skinny <- select(NTL.nutrient.data.PeterPaul, 
                                              lakename, daynum, year4, sampledate, depth:po4)
 ```
@@ -68,21 +71,22 @@ For most situations, data analysis works best when you have organized your data 
 However, there may be situations where we want to reshape our dataset, for example if we want to facet numerical data points by measurement type (more on this in the data visualization unit). We can program this reshaping in a few short lines of code using the package `tidyr`, which is conveniently included in the `tidyverse` package. 
 
 ```{r}
-# Gather nutrient data into one column
+# Gather nutrient data into one column. this command pools the names from the five selected columns into the new dataframe nutrient column, while the values into the concentration column. The resultant table will be skinnier but longer. Gather is useful when graphing.
 NTL.nutrient.data.PeterPaul.gathered <- gather(NTL.nutrient.data.PeterPaul.skinny, "nutrient", "concentration", tn_ug:po4)
+count(NTL.nutrient.data.PeterPaul.gathered, nutrient)#The result of this count command is not true, because not every nutrient has 2770 entries. It included NAs. What we can do is to remove the rows with NAs, using the codes below:
 NTL.nutrient.data.PeterPaul.gathered <- subset(NTL.nutrient.data.PeterPaul.gathered, !is.na(concentration))
-count(NTL.nutrient.data.PeterPaul.gathered, nutrient)
+count(NTL.nutrient.data.PeterPaul.gathered, nutrient) #now it only displays number of rows with non-NA values
 
 write.csv(NTL.nutrient.data.PeterPaul.gathered, row.names = FALSE, 
           file ="./Data/Processed/NTL-LTER_Lake_Nutrients_PeterPaulGathered_Processed.csv")
 
-# Spread nutrient data into separate columns
+# Spread nutrient data into separate columns. Spread is the opposite of gather. It spreads each unique values in nutrient column into new columns, and the concentration column is the number associated with the nutrient columns. The resultant tables would have been like the original table before gathering, minus the rows with NA
 NTL.nutrient.data.PeterPaul.spread <- spread(NTL.nutrient.data.PeterPaul.gathered, nutrient, concentration)
 
-# Split components of cells into multiple columns
+# Split components of cells into multiple columns. Works like tab delimiter in Excel
 # Opposite of 'separate' is 'unite'
 NTL.nutrient.data.PeterPaul.dates <- separate(NTL.nutrient.data.PeterPaul.skinny, sampledate, c("Y", "m", "d"))
-
+#After separating, the Y,m,d columns becomes character class, not dates anymore
 ```
 
 ## JOINING MULTIPLE DATASETS
@@ -93,7 +97,7 @@ In dplyr, there are several types of join functions:
 * `inner_join`: return rows in x where there are matching values in y, and all columns in x and y (mutating join).
 * `semi_join`: return all rows from x where there are matching values in  y, keeping just columns from x (filtering join).
 * `left_join`: return all rows from x, and all columns from x and y (mutating join).
-* `anti_join`: return all rows from x where there are *not* matching values in y, keeping just columns from x (filtering join).
+* `anti_join`: return all rows from x where there are *not* matching values in y, keeping just columns from x (filtering join). (e.g. if you want to exclude the rows where nutrients are taken)
 * `full_join`: return all rows and all columns from x and y. Returns NA for missing values (mutating join).
 
 Let's say we want to generate a new dataset that contains all possible physical and chemical data for Peter and Paul Lakes. In this case, we want to do a full join.
@@ -101,6 +105,8 @@ Let's say we want to generate a new dataset that contains all possible physical 
 ```{r}
 
 NTL.phys.nutrient.data.PeterPaul <- full_join(NTL.phys.data.PeterPaul.skinny, NTL.nutrient.data.PeterPaul.skinny)
+#It is normal to have a lot of NAs in the full_join table because there are more temperature information than nutrients, which means many rows of temperature information do not have matching nutrient information
+
 
 write.csv(NTL.phys.nutrient.data.PeterPaul, row.names = FALSE, 
           file ="./Data/Processed/NTL-LTER_Lake_Chemistry_Nutrients_PeterPaul_Processed.csv")
@@ -113,7 +119,7 @@ A package that makes coercing date much easier is `lubridate`. A guide to the pa
 
 ```{r}
 #install.packages(lubridate)
-library(lubridate)
+library(lubridate) #it masks the base R date command 
 
 # add a month column to the dataset
 NTL.phys.nutrient.data.PeterPaul <- mutate(NTL.phys.nutrient.data.PeterPaul, month = month(sampledate)) 
@@ -122,8 +128,8 @@ NTL.phys.nutrient.data.PeterPaul <- mutate(NTL.phys.nutrient.data.PeterPaul, mon
 NTL.phys.nutrient.data.PeterPaul <- select(NTL.phys.nutrient.data.PeterPaul, lakename, year4, month, sampledate:po4)
 
 # find out the start and end dates of the dataset
-interval(NTL.phys.nutrient.data.PeterPaul$sampledate[1], NTL.phys.nutrient.data.PeterPaul$sampledate[23372])
-interval(first(NTL.phys.nutrient.data.PeterPaul$sampledate), last(NTL.phys.nutrient.data.PeterPaul$sampledate))
+interval(NTL.phys.nutrient.data.PeterPaul$sampledate[1], NTL.phys.nutrient.data.PeterPaul$sampledate[23372]) #not the most reproducible way because number of rows can change
+interval(first(NTL.phys.nutrient.data.PeterPaul$sampledate), last(NTL.phys.nutrient.data.PeterPaul$sampledate)) #changing the lines to just choose the first and last sample date will be more reproducible 
 ```
 
 
@@ -132,6 +138,7 @@ interval(first(NTL.phys.nutrient.data.PeterPaul$sampledate), last(NTL.phys.nutri
 dplyr functionality, combined with the pipes operator, allows us to split datasets according to groupings (function: `group_by`), then run operations on those groupings and return the output of those operations. There is a lot of flexibility in this approach, but we will illustrate just one example today.
 
 ```{r}
+#select rows with surface depth, group by lakename, choose rows where there are no NAs in temp, tn_ug and tp_ug
 NTL.PeterPaul.summaries <- 
   NTL.phys.nutrient.data.PeterPaul %>%
   filter(depth == 0) %>%
