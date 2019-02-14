@@ -172,17 +172,24 @@ print(tempvsdepth)
 
 NvsP <-
   ggplot(PeterPaul.chem.nutrients, aes(x = tp_ug, y = tn_ug, color = depth)) +
-  geom_point() #+
-  #geom_smooth(method = lm) +
-  #geom_abline(aes(slope = 16, intercept = 0))
-print(NvsP)
+  geom_point() +
+  geom_smooth(method = lm) + #If we don't put anything, the smooth line will be curvy. The grey band around smooth line is the confidence interval
+  geom_abline(aes(slope = 16, intercept = 0))
+print(NvsP) #The grey points on the plot means there are points with no measurement on one of the field (nitrogen or phosphorus)
+#In the plot we can see more points above the abline. This means the lake system is more nitrogen rich than phosphorus
 
 # Exercise: Plot relationships between air quality measurements
 
 # 1. 
 # Plot AQI values for ozone by PM2.5, colored by site. 
 # Add a line of best fit for the linear regression of these variables.
+ggplot(EPAair, aes(x=PM2.5,y=Ozone, col=Site.Name)) +
+  geom_point() +
+  geom_smooth(method = lm) #If put aes in geom_point, geom_smooth will say missing values. We can also add the aes argument in geom_smooth()
 
+ggplot(EPAair, aes(x=PM2.5,y=Ozone)) +
+  geom_point(aes(col=Site.Name)) +
+  geom_smooth(method = lm) 
   
 ```
 
@@ -197,13 +204,13 @@ PeterPaul.nutrient.summaries <- PeterPaul.nutrients.gathered %>%
 
 Nutrientplot <- 
   ggplot(PeterPaul.nutrients.gathered) +
-  geom_bar(aes(x = lakename, y = concentration, fill = as.factor(nutrient)), # why did we use fill?
+  geom_bar(aes(x = lakename, y = concentration, fill = as.factor(nutrient)), # why did we use fill? Because the bar has both border and fill. If you don't specify fill, they will look like grey blocks with colored borders
            position = "dodge", stat = "summary", fun.y = "mean")             # what's happening here?
 print(Nutrientplot)
 
 Nutrientplot2 <- 
-  ggplot(PeterPaul.nutrient.summaries, aes(x = lakename, y = mean, fill = as.factor(nutrient))) + #
-  geom_bar(stat = "identity", position = "dodge") + # what does the stat command do?
+  ggplot(PeterPaul.nutrient.summaries, aes(x = lakename, y = mean, fill = as.factor(nutrient))) + 
+  geom_bar(stat = "identity", position = "dodge") + # what does the stat command do? Because in the summary file we already have the mean calculated, we just need to use stat = identity instead of summary
   geom_errorbar(aes(ymin = mean-sd, ymax = mean+sd), # how do we specify error bars?
                  position = "dodge")
 print(Nutrientplot2)
@@ -213,7 +220,7 @@ print(Nutrientplot2)
 # Box and whiskers plot
 Nutrientplot3 <-
   ggplot(PeterPaul.nutrients.gathered, aes(x = lakename, y = concentration)) +
-  geom_boxplot(aes(color = nutrient)) # Why didn't we use "fill"?
+  geom_boxplot(aes(color = nutrient)) # Why didn't we use "fill"? because the data are still points not bar?
 print(Nutrientplot3)
 
 # Dot plot
@@ -251,6 +258,17 @@ print(Nutrientplot7)
 # 1. 
 # Create a bar chart plus standard deviation error bars for PM2.5, divided by year. 
 # Create separate bars for each site. 
+EPAair.summaries <- EPAair %>%
+  group_by(Site.Name, year) %>%
+  summarise(
+    mean = mean(PM2.5, na.rm=TRUE),
+    sd = sd(PM2.5, na.rm=TRUE))
+str(EPAair.summaries)
+ggplot(EPAair.summaries, aes(x=as.factor(year), y=mean, fill=Site.Name))+
+  geom_bar(position="dodge", stat="identity") +
+  geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd),# how do we specify error bars?
+                 position = "dodge")
+
 
 # 2. 
 # Create a new plot that better depicts the distribution of PM2.5 concentrations. 

@@ -1,6 +1,6 @@
 ---
 title: "Assignment 5: Data Visualization"
-author: "Student Name"
+author: "Ying Wei Jong"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
@@ -33,9 +33,29 @@ The completed exercise is due on Thursday, 14 February, 2019 before class begins
 2. Make sure R is reading dates as date format, not something else (hint: remember that dates were an issue for the USGS gauge data).
 
 ```{r}
-#1
+#1 Sorry, I don't understand which files are the tidy and gathered referring to, so I might load the wrong file
+PeterPaulTidy <- read.csv("./Data/Processed/NTL-LTER_Lake_ChemistryPhysics_PeterPaul_Processed.csv", header=T)
+PeterPaulGathered <- read.csv("./Data/Processed/NTL-LTER_Lake_Chemistry_Nutrients_PeterPaul_Processed.csv", header=T)
+USGS.data <- read.csv("./Data/Raw/USGS_Site02085000_Flow_Raw.csv", header=T)
+Ecotox <- read.csv("./Data/Raw/ECOTOX_Neonicotinoids_Mortality_raw.csv")
 
 #2
+str(PeterPaulTidy) 
+str(PeterPaulGathered)
+str(USGS.data) 
+str(Ecotox)
+#Need to change date for PeterPaulTidy, PeterPaulGathered and USGS.data
+#It is funny that I did not realize until now, but in the as.Date function, I need to make sure that the format i specified is the same format with what the raw.data has, otherwise R cannot understand it.
+PeterPaulTidy$sampledate <- as.Date(PeterPaulTidy$sampledate, format = "%m/%d/%y")
+PeterPaulGathered$sampledate <- as.Date(PeterPaulGathered$sampledate, format = "%Y-%m-%d")
+USGS.data$datetime <- as.Date(USGS.data$datetime, format = "%m/%d/%y")
+USGS.data$datetime <- format(USGS.data$datetime, format = "%y%m%d")
+create.early.dates <- (function(d) {
+       paste0(ifelse(d > 181231,"19","20"),d)
+       })
+USGS.data$datetime <- create.early.dates(USGS.data$datetime)
+USGS.data$datetime <- as.Date(USGS.data$datetime, format = "%Y%m%d")
+
 ```
 ## Define your theme
 3. Build a theme and set it as your default theme.
