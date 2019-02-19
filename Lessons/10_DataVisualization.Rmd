@@ -75,7 +75,7 @@ O3plot5 <- ggplot(EPAair) +
   mytheme
 print(O3plot5)  
 
-theme_set(mytheme)
+theme_set(mytheme) #this command will set mytheme as the default theme throughout the session
 
 O3plot6 <- ggplot(EPAair) +
   geom_point(aes(x = Date, y = Ozone))
@@ -90,14 +90,14 @@ While the theme allows us to set multiple aspects of plots, ggplot allows us to 
 ```{r, fig.height = 3, fig.width = 4, warning = FALSE}
 O3plot7 <- ggplot(EPAair, aes(x = Date, y = Ozone)) +
   geom_rect(xmin = as.Date("2016-01-01"), xmax = as.Date("2020-01-01"), 
-            ymin = 0, ymax = 50, fill = "green") +
+            ymin = 0, ymax = 50, fill = "green") + #Draw green rectangle at areas where y = 0:50
   geom_rect(xmin = as.Date("2016-01-01"), xmax = as.Date("2020-01-01"), 
-            ymin = 50, ymax = 100, fill = "yellow") +
-  geom_point() +
-  geom_text(x = as.Date("2019-01-01"), y = 45, label = "good", hjust = 1, fontface = "bold") +
-  geom_text(x = as.Date("2019-01-01"), y = 95, label = "moderate", hjust = 1, fontface = "bold") +
+            ymin = 50, ymax = 100, fill = "yellow") + #Draw yellow rectangle at areas where x = 50:100
+  geom_point() + #Add data points of Date at x and Ozone at y axis
+  geom_text(x = as.Date("2019-01-01"), y = 45, label = "good", hjust = 1, fontface = "bold") + #Added "good" near the top of green rectangle
+  geom_text(x = as.Date("2019-01-01"), y = 95, label = "moderate", hjust = 1, fontface = "bold") + #Added "moderate" near the top of yellow rectangle. hjust moves the text to the right
   scale_x_date(limits = as.Date(c("2017-01-01", "2018-12-31")), 
-    date_breaks = "2 months", date_labels = "%b %y") +
+    date_breaks = "2 months", date_labels = "%b %y") + #limit x scale to 20170101 to 20181231, create a tag every 2 months, label dates in Month - day format
   ylab(expression("O"[3]* " AQI Value")) +
   theme(axis.text.x = element_text(angle = 45,  hjust = 1))
 print(O3plot7)  
@@ -128,7 +128,7 @@ scales::show_col(colormap(colormap = colormaps$magma, nshades = 16))
 display.brewer.all(n = 9)
 
 NvsP <-
-  ggplot(PeterPaul.chem.nutrients, aes(x = tp_ug, y = tn_ug, color = depth, shape = lakename)) +
+  ggplot(PeterPaul.chem.nutrients, aes(x = tp_ug, y = tn_ug, shape = lakename)) +
   geom_point() 
 print(NvsP)
 
@@ -136,12 +136,12 @@ print(NvsP)
 # change your axis labels to reflect TN and TP in micrograms per liter.
 # change your legend labels
 NvsP2 <-
-  ggplot(PeterPaul.chem.nutrients, aes(x = tp_ug, y = tn_ug, color = depth, shape = lakename)) +
+  ggplot(PeterPaul.chem.nutrients, aes(x = tp_ug, y = tn_ug, fill=depth, shape = lakename)) +
   geom_point(alpha = 0.8, size = 3) +
-  #xlab() +
-  #ylab() +
+  xlab("Total P (\U003BCg/L)") +
+  ylab("Total N (\U003BCg/L)") +
   # change your legend labels here
-  scale_shape_manual(values = c(15, 17)) +
+  scale_shape_manual(values = c(21, 23)) +
   #scale_color_distiller(palette = "Blues", direction = 1) + # use scale_color_brewer for discrete variables
   scale_color_viridis(option = "magma", direction = -1) +
   theme(legend.position = "right", 
@@ -154,12 +154,14 @@ print(NvsP2)
 Nutrientplot <-
   ggplot(PeterPaul.nutrients.gathered, aes(x = lakename, y = concentration, color = nutrient)) +
   geom_boxplot() +
+  xlab(NULL)+
+  ylab("Concentration(\U003BCg/L)")+
 # place your additional edits here
   scale_y_continuous(expand = c(0, 0)) +
   #scale_color_brewer(palette = "YlGnBu") +
-  #scale_color_manual(values = c("#7fcdbb", "#41b6c4", "#1d91c0", "#225ea8", "#0c2c84")) +
+  scale_color_manual(values = c("#7fcdbb", "#41b6c4", "#1d91c0", "#225ea8", "#0c2c84")) +
   #scale_color_viridis(discrete = TRUE) +
-  theme(legend.position = "right")
+  theme(legend.position = "right", )
 print(Nutrientplot)
 ```
 
@@ -182,6 +184,8 @@ In situations where facets don't fill our needs to place multiple plots on a pag
 
 ```{r, fig.height = 7, fig.width = 6}
 #install.packages("gridExtra")
+
+
 library(gridExtra)
 grid.arrange(NvsP2, Nutrientplot)
 grid.arrange(O3plot7, PMplot.faceted)
