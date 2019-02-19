@@ -33,9 +33,9 @@ The completed exercise is due on Tuesday, 19 February, 2019 before class begins.
 2. Make sure R is reading dates as date format, not something else (hint: remember that dates were an issue for the USGS gauge data).
 
 ```{r}
-#1 Sorry, I don't understand which files are the tidy and gathered referring to, so I might load the wrong file
-PeterPaulTidy <- read.csv("./Data/Processed/NTL-LTER_Lake_ChemistryPhysics_PeterPaul_Processed.csv", header=T)
-PeterPaulGathered <- read.csv("./Data/Processed/NTL-LTER_Lake_Chemistry_Nutrients_PeterPaul_Processed.csv", header=T)
+#1
+PeterPaulTidy <- read.csv("./Data/Processed/NTL-LTER_Lake_Chemistry_Nutrients_PeterPaul_Processed.csv", header=T)
+PeterPaulGathered <- read.csv("./Data/Processed/NTL-LTER_Lake_Nutrients_PeterPaulGathered_Processed.csv", header=T)
 USGS.data <- read.csv("./Data/Raw/USGS_Site02085000_Flow_Raw.csv", header=T)
 Ecotox <- read.csv("./Data/Raw/ECOTOX_Neonicotinoids_Mortality_raw.csv")
 
@@ -62,7 +62,10 @@ USGS.data$datetime <- as.Date(USGS.data$datetime, format = "%Y%m%d")
 
 ```{r}
 #3
-
+library(ggplot2)
+my.theme <- theme_bw(base_size = 12) + 
+  theme(axis.text=element_text(color="gray0"), legend.position = "right")
+theme_set(my.theme)
 ```
 
 ## Create graphs
@@ -74,7 +77,14 @@ Hint: a good way to build graphs is to make them ugly first and then create more
 
 ```{r}
 #4
+ggplot(PeterPaulTidy, aes(y=tp_ug, x=po4,color = lakename)) +
+  geom_point() +
+  xlab("Phosphate") +
+  ylab("Total Phosphorus") + 
+  scale_color_manual(values = c("rosybrown1", "aquamarine")) +
+  geom_smooth(method = lm, col="black")
 
+#Shall I take out that outlier?
 ```
 
 
@@ -82,7 +92,11 @@ Hint: a good way to build graphs is to make them ugly first and then create more
 
 ```{r}
 #5
-
+library(RColorBrewer)
+ggplot(PeterPaulGathered, aes(y=concentration, x=sampledate, color=depth))+
+  geom_point()+
+  facet_grid(PeterPaulGathered$nutrient)+
+  scale_color_distiller(palette = "Blues", direction = 1)
 ```
 
 
@@ -90,6 +104,16 @@ Hint: a good way to build graphs is to make them ugly first and then create more
 
 ```{r}
 #6
+library(gridExtra)
+Plot1 <- ggplot(USGS.data,aes(x=datetime, y=X165986_00060_00001))+
+  geom_point()+
+  geom_line()
+
+Plot2 <- ggplot(USGS.data,aes(x=datetime, y=X165986_00060_00001))+
+  geom_point()+
+  geom_smooth()
+grid.arrange(Plot1,Plot2,nrow=1)
+
 
 ```
 Question: How do these two types of lines affect your interpretation of the data?
