@@ -32,7 +32,7 @@ The completed exercise is due on Tuesday, 19 February, 2019 before class begins.
 
 2. Make sure R is reading dates as date format, not something else (hint: remember that dates were an issue for the USGS gauge data).
 
-```{r}
+```{r, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
 #1
 PeterPaulTidy <- read.csv("./Data/Processed/NTL-LTER_Lake_Chemistry_Nutrients_PeterPaul_Processed.csv", header=T)
 PeterPaulGathered <- read.csv("./Data/Processed/NTL-LTER_Lake_Nutrients_PeterPaulGathered_Processed.csv", header=T)
@@ -60,7 +60,7 @@ USGS.data$datetime <- as.Date(USGS.data$datetime, format = "%Y%m%d")
 ## Define your theme
 3. Build a theme and set it as your default theme.
 
-```{r}
+```{r, tidy=TRUE}
 #3
 library(ggplot2)
 my.theme <- theme_bw(base_size = 12) + 
@@ -75,55 +75,89 @@ Hint: a good way to build graphs is to make them ugly first and then create more
 
 4. [NTL-LTER] Plot total phosphorus by phosphate, with separate aesthetics for Peter and Paul lakes. Add a line of best fit and color it black.
 
-```{r}
+```{r, tidy=TRUE}
 #4
-ggplot(PeterPaulTidy, aes(y=tp_ug, x=po4,color = lakename)) +
+ggplot(PeterPaulTidy, aes(y=tp_ug, x=po4,color = lakename,shape=lakename)) +
   geom_point() +
   xlab("Phosphate") +
   ylab("Total Phosphorus") + 
   scale_color_manual(values = c("rosybrown1", "aquamarine")) +
-  geom_smooth(method = lm, col="black")
+  geom_smooth(method = lm, formula = y~x,col="black")
 
-#Shall I take out that outlier?
+#Shall I take out that outlier? Why are there two lines?
 ```
 
 
 5. [NTL-LTER] Plot nutrients by date for Peter Lake, with separate colors for each depth. Facet your graph by the nutrient type.
 
-```{r}
+```{r, tidy=TRUE}
 #5
 library(RColorBrewer)
+
+nutrient_names <- list(
+  "nh34"="Ammonium",
+  "no23"="Nitrate",
+  "po4"="Phosphate",
+  "tn_ug"="Total Nitrogen",
+  "tp_ug"="Total Phosphorus" 
+)
+
+nutrient_labeller <- function(variable,value){
+  return(nutrient_names[value])
+}
 ggplot(PeterPaulGathered, aes(y=concentration, x=sampledate, color=depth))+
   geom_point()+
-  facet_grid(PeterPaulGathered$nutrient)+
-  scale_color_distiller(palette = "Blues", direction = 1)
+  facet_grid(PeterPaulGathered$nutrient, labeller = nutrient_labeller)+
+  #facet_wrap(vars(nutrient), nrow=5) +
+  xlab("Dates")+
+  ylab("Nutrient concentration")+
+  scale_color_distiller(palette = "Blues", direction = 1)+
+  scale_x_date( 
+    date_breaks = "5 year", date_labels = "%y") 
+?label_value
 ```
 
 
 6. [USGS gauge] Plot discharge by date. Create two plots, one with the points connected with geom_line and one with the points connected with geom_smooth (hint: do not use method = "lm"). Place these graphs on the same plot (hint: ggarrange or something similar)
 
-```{r}
-#6
+```{r, tidy=TRUE}
+#6 I chose the mean discharge instead of max discharge
 library(gridExtra)
-Plot1 <- ggplot(USGS.data,aes(x=datetime, y=X165986_00060_00001))+
-  geom_point()+
-  geom_line()
+library(ggpubr)
+Plot1 <- ggplot(USGS.data,aes(x=datetime, y=X84936_00060_00003))+
+  geom_point(size=0.5)+
+  geom_line()+
+  #xlim(2000,2020)+ When i add this line, I get error message "Error in as.Date.numeric(value) : 'origin' must be supplied""
+  ylab("Discharge")+
+  xlab("Year")
 
-Plot2 <- ggplot(USGS.data,aes(x=datetime, y=X165986_00060_00001))+
-  geom_point()+
-  geom_smooth()
-grid.arrange(Plot1,Plot2,nrow=1)
+Plot2 <- ggplot(USGS.data,aes(x=datetime, y=X84936_00060_00003))+
+  geom_point(size=0.5)+
+  geom_smooth(method="auto")+  
+  #xlim(2000,2020)+
+  ylab("Discharge")+
+  xlab("Year")
+
+ggarrange(Plot1, Plot2, nrow=1, ncol=2)
 
 
 ```
 Question: How do these two types of lines affect your interpretation of the data?
 
-> Answer:
+> Answer: The first plot where points are connected by lines does not really help in interpreting the data because I cannot see any patterns from the lines. The second plot is slightly better as i can see the general trend of where most data points lie.
 
 7. [ECOTOX Neonicotinoids] Plot the concentration, divided by chemical name. Choose a geom that accurately portrays the distribution of data points.
 
-```{r}
+```{r, tidy=TRUE}
 #7 
+ggplot(Ecotox,aes(y=`Conc..Mean..Std.`, x=Chemical.Name, col=Chemical.Name))+
+  geom_violin() +
+  ylab("Concentration")+
+  xlab("Chemical Types")+
+  theme_bw(base_size = 9) +
+  theme(legend.position="none")
+  
+  
 
 ```
 

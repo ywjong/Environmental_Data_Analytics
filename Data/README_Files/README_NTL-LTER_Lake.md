@@ -38,7 +38,7 @@ POC, PON and DOC: 1. 100 - 300 ml (Typically ~200mL for PML, 150 metalimnion and
 
 Absorbance: 60ml of water was filtered through a 25mm GF/F filter and refrigerated until it was able to be run. Samples were warmed up to room temperature and run on a spectrophotometer in a 10cm glass cuvette. The spectrophotometer was set to 440nm and blanked with deionized water. The cuvette was rinsed once with sample water and then filled and absorbance was measured.
 
-DIC: Water was sampled with a van dorn and taken back to the lab. 10 mL subsamples were taken with syringes and 200 uL of 2N H2SO4 and 20 mL of helium gas were added to the syringe. Syringes were shaken for one minute and 10 mL of the helium headspace was injected into a Gas Chromatograph with Thermal Conductivity Detector to determine DIC concentration.
+DIC: Water was sampled with a van dorn and taken back to the lab. 10 mL subsamples were taken with syringes and 200 uL of 2N H2SO4 and 20 mL of helium gas were added to the syringe. Syringes were shaken for one minute and 10 mL of the helium headspace was injected into a Gas Chromatograph with Thermal Conductivity Detector to determine DIC.
 
 PCO2: Air PCO2 was measured by filling a syringe with air from two meters above the lake surface and running though the GC. Water PCO2 was measured by filling a two liter bottle with lake surface water and replacing 60 mL of water with atmospheric air for headspace. The bottle was shaken for 100 seconds and two subsamples of the headspace were taken and run though a GC in the lab.
 
