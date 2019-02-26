@@ -84,7 +84,7 @@ ggplot(PeterPaulTidy, aes(y=tp_ug, x=po4,color = lakename,shape=lakename)) +
   scale_color_manual(values = c("rosybrown1", "aquamarine")) +
   geom_smooth(method = lm, formula = y~x,col="black")
 
-#Shall I take out that outlier? Why are there two lines?
+#Shall I take out that outlier? Why are there two lines? Because there are two categories specified (i.e. lakename)
 ```
 
 
