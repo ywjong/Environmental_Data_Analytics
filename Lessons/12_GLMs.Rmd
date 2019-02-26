@@ -54,13 +54,15 @@ irradiance.regression <- lm(PeterPaul.chem.nutrients$irradianceWater ~ PeterPaul
 # another way to format the lm function
 irradiance.regression <- lm(data = PeterPaul.chem.nutrients, irradianceWater ~ depth)
 summary(irradiance.regression)
+#using the regression, we predict that irradiance = 486.8 - 95.89*depth + error
+#r2 = correlation^2
 
 # Correlation
 cor.test(PeterPaul.chem.nutrients$irradianceWater, PeterPaul.chem.nutrients$depth)
 ```
 Question: How would you report the results of this test (overall findings and report of statistical output)?
 
-> ANSWER: 
+> ANSWER: Depth has significant impact on level of irradiance (linear regression, 'Adjusted R2 = 0.3,, df = 15549 p < 0.0001)
 
 So, we see there is a significant negative correlation between irradiance and depth (lower light levels at greater depths), and that this model explains about 31 % of the total variance in irradiance. Let's visualize this relationship and the model itself. 
 
@@ -84,7 +86,7 @@ The option best suited for communicating findings is to plot the explanatory and
 # Plot the regression
 irradiancebydepth <- 
   ggplot(PeterPaul.chem.nutrients, aes(x = depth, y = irradianceWater)) +
-  #ylim(0, 2000) +
+  ylim(0, 2000) +
   geom_point() 
 print(irradiancebydepth) 
 ```
@@ -107,10 +109,13 @@ print(irradiancebydepth2)
 
 # SE can also be removed
 irradiancebydepth2 <- 
-    ggplot(PeterPaul.chem.nutrients, aes(x = depth, y = irradianceWater)) +
-    geom_point() +
+    ggplot(PeterPaul.chem.nutrients, aes(x = depth, y = irradianceWater, color=lakename)) +
+    geom_point(size=0.1, alpha=0.5) +
+    xlab("Depth")+
+    ylab("Water Irradiance")+
     scale_y_log10() +
-    geom_smooth(method = 'lm', se = FALSE, color = "black")
+    scale_x_continuous(breaks=c(0,2,4,6,8,10,12)) +
+    geom_smooth(method = 'lm', se = FALSE, color = "yellow")
 print(irradiancebydepth2)
 
 # Make the graph attractive
@@ -131,12 +136,21 @@ It is possible, and often useful, to consider multiple continuous explanatory va
 ``` {r, fig.height = 3, fig.width = 4}
 TPregression <- lm(data = PeterPaul.chem.nutrients, tp_ug ~ depth + dissolvedOxygen)
 summary(TPregression)
+#The intercept means the dissolved oxygen level at 0m depth
+#total phosphorus = 6+1.5(depth)+0.93(oxygen)
 
 TPplot <- ggplot(PeterPaul.chem.nutrients, 
                  aes(x = dissolvedOxygen, y = tp_ug, color = depth)) +
   geom_point() +
   xlim(0, 20)
 print(TPplot)
+
+
+TPplot2 <- ggplot(PeterPaul.chem.nutrients, 
+                 aes(x = depth, y = tp_ug, color = dissolvedOxygen)) +
+  geom_point() +
+  xlim(0, 20)
+print(TPplot2)
 ```
 ### Correlation Plots
 We can also make exploratory plots of several continuous data points to determine possible relationships, as well as covariance among explanatory variables. 
@@ -147,7 +161,7 @@ library(corrplot)
 PeterPaulnutrients <- 
   PeterPaul.chem.nutrients %>%
   select(tn_ug:po4) %>%
-  na.omit()
+  na.omit() #if there is NAs, the corr plot will display ?, i.e. it wont work
 PeterPaulCorr <- cor(PeterPaulnutrients)
 corrplot(PeterPaulCorr, method = "ellipse")
 corrplot.mixed(PeterPaulCorr, upper = "ellipse")
@@ -162,7 +176,7 @@ Let's say we want to know which explanatory variables will allow us to best pred
 PeterPaul.naomit <- na.omit(PeterPaul.chem.nutrients)
 TPAIC <- lm(data = PeterPaul.naomit, tp_ug ~ depth + dissolvedOxygen + 
               temperature_C + tn_ug + po4)
-step(TPAIC)
+step(TPAIC) #The lower the aic value, the better
 TPmodel <- lm(data = PeterPaul.naomit, tp_ug ~ temperature_C + tn_ug)
 summary(TPmodel)
 
@@ -171,16 +185,22 @@ summary(TPmodel)
 ## ANCOVA
 Analysis of Covariance consists of a prediction of a continuous response variable by both continuous and categorical explanatory variables. We set this up in R with the `lm` function, just like prior applications in this lesson. 
 
+ANCOVA adds multiple levels of alpha instead of single alpha in ANOVA
+
 Let's say we wanted to predict total nitrogen concentrations by depth and by lake, similarly to what we did with a two-way ANOVA for depth ID and lake. 
 
 ```{r, fig.height = 3, fig.width = 4}
 # main effects
 TNancova.main <- lm(data = PeterPaul.chem.nutrients, tn_ug ~ lakename + depth)
 summary(TNancova.main)
+#The intercept 353 means paul lake at depth 0, while peter lake on its own has 353+135 total nitrogen
+#Total nitrogen = 353 + 135*Peter Lake - 97(depth)
+#in this case, the categorical factor peter and paul explains most difference instead of depth
 
 # interaction effects
 TNancova.interaction <- lm(data = PeterPaul.chem.nutrients, tn_ug ~ lakename * depth)
 summary(TNancova.interaction)
+#The intercept represents Paul Lake at zero meters, peter lake is 185 higher than paul lake, for paul lake, the depth increases by 19.87, but for peter, the lake depth will decrease total n by 48
 
 TNplot <- ggplot(PeterPaul.chem.nutrients, aes(x = depth, y = tn_ug, color = lakename)) + 
   geom_point() + 
