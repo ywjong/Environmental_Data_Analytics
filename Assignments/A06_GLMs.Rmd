@@ -1,6 +1,6 @@
 ---
 title: "Assignment 6: Generalized Linear Models"
-author: "Student Name"
+author: "Ying Wei Jong"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
@@ -34,9 +34,14 @@ The completed exercise is due on Tuesday, 26 February, 2019 before class begins.
 
 ```{r}
 #1
+EPA_Ecotox <- read.csv("./Data/Raw/ECOTOX_Neonicotinoids_Mortality_raw.csv", header=T)
+LTER <- read.csv("./Data/Raw/NTL-LTER_Lake_ChemistryPhysics_Raw.csv", header=T)
 
 #2
-
+library(ggplot2)
+my.theme <- theme_bw(base_size = 12) + 
+  theme(axis.text=element_text(color="gray0"), legend.position = "right")
+theme_set(my.theme)
 ```
 
 ## Neonicotinoids test
@@ -50,31 +55,57 @@ Research question: Were studies on various neonicotinoid chemicals conducted in 
 
 ```{r}
 #3
+unique(EPA_Ecotox$Chemical.Name)
 
 #4
+YearForEachChem <- by(EPA_Ecotox, EPA_Ecotox$Chemical.Name, function(x) shapiro.test(x$Pub..Year))
+sapply(YearForEachChem, print)
+#For each chemical, the publication years associated with it is not well-approximated by a normal distribution
+
+#Pipe version didnt work....
+library(tidyverse)
+YearForEachChem2 <- EPA_Ecotox %>%
+  group_by(Chemical.Name) %>%
+  shapiro.test(Pub..Year) #I get an error message: unused argument. Taylor help!
+
+ggplot(EPA_Ecotox, aes(x=Pub..Year, col = Chemical.Name))+
+  geom_freqpoly()
 
 #5
+YearForEachChem3 <- by(EPA_Ecotox, EPA_Ecotox$Chemical.Name, function(x) var(x$Pub..Year))
+sapply(YearForEachChem3, print) #They do look like they have non-equal variance
+#install.packages("car")
+library(car)
+leveneTest(Pub..Year ~ Chemical.Name, data = EPA_Ecotox) #we reject the hypothesis that the groups have equal variance
 
 ```
 
 6. Based on your results, which test would you choose to run to answer your research question?
 
-> ANSWER: 
+> ANSWER: One-way ANOVA. Continuous response with one categorical explanatory variable with more than two categories
 
 7. Run this test below. 
 
 8. Generate a boxplot representing the range of publication years for each chemical. Adjust your graph to make it pretty.
 ```{r}
 #7
+lm1 <- lm(Pub..Year ~ Chemical.Name, data = EPA_Ecotox)
+summary(lm1)
 
 #8
-
+ggplot(EPA_Ecotox,aes(y=Pub..Year, x=Chemical.Name)) +
+  geom_boxplot(aes(fill=Chemical.Name)) +
+  xlab("Chemicals") +
+  ylab("Published Year")+
+  ggtitle("Publised Year Associated With Each Chemical")+
+  theme(legend.position = "none")
+  
 ```
 
 
 9. How would you summarize the conclusion of your analysis? Include a sentence summarizing your findings and include the results of your test in parentheses at the end of the sentence. 
 
-> ANSWER: 
+> ANSWER: The studies on various neonicotinoid chemicals were conducted in different years (One-way ANOVA; F=33.21, df=1274, p<0.0001). 
 
 ## NTL-LTER test
 Research question: What is the best set of predictors for lake temperatures in July across the monitoring period at the North Temperate Lakes LTER? 
@@ -89,30 +120,43 @@ Research question: What is the best set of predictors for lake temperatures in J
 
 ```{r}
 #11
-
+LTER2 <- LTER %>%
+  select(lakename, year4, daynum, depth, temperature_C) %>%
+  filter(daynum %in% c(182:212)) %>%
+  na.omit(lakename, year4, daynum, depth, temperature_C)
+  
 #12
-
+LTERAIC <- lm(temperature_C ~ year4+daynum+depth,data=LTER2)
+step(LTERAIC) #It seems to be best to omit nothing
+lm2 <- lm(temperature_C ~ year4+daynum+depth,data=LTER2)
+summary(lm2)
 ```
 
 13. What is the final linear equation to predict temperature from your multiple regression? How much of the observed variance does this model explain?
 
-> ANSWER: 
+> ANSWER: temperature = -6.45 + 0.01*year4 + 0.041*daynum - 1.95*depth. This model explains 74.2% of the observed variance
 
 14. Run an interaction effects ANCOVA to predict temperature based on depth and lakename from the same wrangled dataset.
 
 ```{r}
 #14
-
+lm3 <- lm(temperature_C ~ depth * lakename, data=LTER2)
+summary(lm3)
 ```
 
 15. Is there an interaction between depth and lakename? How much variance in the temperature observations does this explain?
 
-> ANSWER: 
+> ANSWER: Yes, most combinations of depth and lakename have significant impacts on temperature observations. This model explains about 78.6% of the variance in temperature observations.
 
 16. Create a graph that depicts temperature by depth, with a separate color for each lake. Add a geom_smooth (method = "lm", se = FALSE) for each lake. Make your points 50 % transparent. Adjust your y axis limits to go from 0 to 35 degrees. Clean up your graph to make it pretty. 
 
 ```{r}
 #16
-
+library(viridis)
+library(RColorBrewer)
+ggplot(LTER2, aes(x=depth, y=temperature_C, col=lakename)) +
+  geom_point()+
+  scale_y_reverse()+
+  scale_color_brewer(palette = "YlGnBu")
 ```
 
