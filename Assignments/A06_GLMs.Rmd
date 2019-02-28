@@ -62,11 +62,11 @@ YearForEachChem <- by(EPA_Ecotox, EPA_Ecotox$Chemical.Name, function(x) shapiro.
 sapply(YearForEachChem, print)
 #For each chemical, the publication years associated with it is not well-approximated by a normal distribution
 
-#Pipe version didnt work....
 library(tidyverse)
-YearForEachChem2 <- EPA_Ecotox %>%
-  group_by(Chemical.Name) %>%
-  shapiro.test(Pub..Year) #I get an error message: unused argument. Taylor help!
+#Pipe version didnt work....
+#YearForEachChem2 <- EPA_Ecotox %>%
+#  group_by(Chemical.Name) %>%
+#  shapiro.test(Pub..Year) #I get an error message: unused argument. Taylor help!
 
 ggplot(EPA_Ecotox, aes(x=Pub..Year, col = Chemical.Name))+
   geom_freqpoly()
