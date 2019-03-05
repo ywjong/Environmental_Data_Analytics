@@ -735,7 +735,9 @@ the variance in temperature observations.
 \KeywordTok{ggplot}\NormalTok{(LTER2, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{depth, }\DataTypeTok{y=}\NormalTok{temperature_C, }\DataTypeTok{col=}\NormalTok{lakename)) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{geom_point}\NormalTok{()}\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_y_reverse}\NormalTok{()}\OperatorTok{+}
-\StringTok{  }\KeywordTok{scale_color_brewer}\NormalTok{(}\DataTypeTok{palette =} \StringTok{"YlGnBu"}\NormalTok{)}
+\StringTok{  }\KeywordTok{scale_color_brewer}\NormalTok{(}\DataTypeTok{palette =} \StringTok{"YlGnBu"}\NormalTok{)}\OperatorTok{+}
+\StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{"Temperature (Celsius"}\NormalTok{)}\OperatorTok{+}
+\StringTok{  }\KeywordTok{ggtitle}\NormalTok{(}\StringTok{"Temperature by Depth Across Different Lakes"}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 

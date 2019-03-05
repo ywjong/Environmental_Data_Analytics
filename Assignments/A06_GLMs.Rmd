@@ -157,6 +157,8 @@ library(RColorBrewer)
 ggplot(LTER2, aes(x=depth, y=temperature_C, col=lakename)) +
   geom_point()+
   scale_y_reverse()+
-  scale_color_brewer(palette = "YlGnBu")
+  scale_color_brewer(palette = "YlGnBu")+
+  ylab("Temperature (Celsius")+
+  ggtitle("Temperature by Depth Across Different Lakes")
 ```
 
