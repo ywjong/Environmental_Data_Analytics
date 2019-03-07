@@ -88,11 +88,11 @@ Next, we will determine the degree of temporal autocorrelation in our dataset. W
 # Determine autocorrelation in residuals
 TempTest.auto <- lme(data = PeterPaul.summertemp,
                      temperature_C ~ sampledate * lakename, 
-                     random = ~1|Week)
+                     random = ~1|Week) #defining week of the year as random variable
 TempTest.auto
-
+#The output shows that there is about 1.58 of standard error across total weeks
 ACF(TempTest.auto)
-
+#We are interested in the second value (lag 1)
 ```
 This model structure should look familiar, with a typical linear model structure and dataframe defined. The addition here is that we have defined Week as a random variable. Essentially, we are interested not in the specific effects of each week but in the variability among weeks, so we have defined it as a random effect (essentially coming from a larger distribution of seasonal variability). The ~1 statement indicates that each week has its own intercept in the model. From here, we want to take the first order correlation to specify our autocorrelation structure. From the ACF output, we take the 2nd value (the innermost group level) to define the degree of autocorrelation. This number will always fall between 0 and 1. Notice that there is a fairly large degree of autocorrelation in our variables.
 
@@ -107,9 +107,11 @@ TempTest.mixed <- lme(data = PeterPaul.summertemp,
                      #specify autocorrelation structure of order 1
                      #sampledate is duplicated in some cases, so need to split up by lake
                      correlation = corAR1(form = ~ sampledate/lakename|Week, value = 0.423),
-                     #define method as restricted maximum likelihood
+                     #define method as restricted maximum likelihood, penalizes us for having more explanatory variables
                      method = "REML")
 summary(TempTest.mixed)
+#The sampledate coefficient means that every day will increase temperature by 0.000099 degree
+#After multiplying that coefficient by 32 years and 365 days each year, the test shows that the lake increased temperature by 1.16 degree
 
 # Compare the random effects model with the fixed effects model
 TempTest.fixed <- gls(data = PeterPaul.summertemp,
@@ -120,6 +122,8 @@ summary(TempTest.fixed)
 anova(TempTest.mixed, TempTest.fixed)
 # The lower the AIC, the better.
 # The p-value tells us whether those models have a significantly different fit
+#The p value shows that the mixed and fixed model provide significantly different fit
+#fixed model has much higher AIC value than mixed model
 
 # Post-hoc test
 # This will yield groupings of temperature by lake for the average date value
