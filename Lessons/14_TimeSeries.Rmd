@@ -19,7 +19,7 @@ editor_options:
 ```{r, message = FALSE, warning = FALSE}
 getwd()
 library(tidyverse)
-#install.packages("trend")
+install.packages("trend")
 library(trend)
 
 
@@ -52,12 +52,14 @@ theme_set(mytheme)
 
 In many environmental datasets (especially climate and hydrology), we might not expect a linear trend in the response variable over time. In this case, we will need to employ a nonparametric test to determine whether there is a monotonic trend (i.e., consistent increase or decrease but not necessarily linear) over time. We will illustrate a few examples of nonparametric trend tests today with the `trend` package. 
 
+In many case, we are not expecting linear relationship. So instead of linear model, we will use nonparametric test.
+
 A vignette for the `trend` package can be found here: https://cran.r-project.org/web/packages/trend/vignettes/trend.pdf. More details here: https://cran.r-project.org/web/packages/trend/trend.pdf.
 
-We will run a Mann-Kendall and a Seasonal Mann-Kendall test today, but there are additional variants of these tests within the package including a correlated Seasonal Mann-Kendall test, a multivariate Mann-Kendall test, a partial Mann-Kendall test, a partial correlation trend test, and a Cox and Stuart trend test. Look into the documentation for these tests to determine which one is appropriate for your purposes.
+We will run a Mann-Kendall and a Seasonal Mann-Kendall test today, but there are additional variants of these tests within the package including a correlated Seasonal Mann-Kendall test, a multivariate Mann-Kendall test, a partial Mann-Kendall test, a partial correlation trend test, and a Cox and Stuart trend test. Look into the documentation for these tests to determine which one is appropriate for your purposes. Be careful when using nonparametric time trend test especially for the data assumptions.
 
 ### Mann-Kendall Test
-A Mann-Kendall test will analyze whether there is a monotonic trend in the response variable over time. Let's use the Mann-Kendall test to investigate whether there is a trend in total phosphorus concentrations in Peter Lake over time. 
+A Mann-Kendall test will analyze whether there is a monotonic trend in the response variable over time. Let's use the Mann-Kendall test to investigate whether there is a trend in total phosphorus concentrations in Peter Lake over time. Mann-Kendall does not account for seasonality
 
 ```{r}
 # Wrangle our dataset
@@ -65,7 +67,7 @@ PeterPaul.nutrients.surface <-
   PeterPaul.nutrients %>%
   select(-lakeid, -depth_id, -comments) %>%
   filter(depth == 0) %>%
-  filter(!is.na(tp_ug))
+  filter(!is.na(tp_ug)) #filter out NAs in total phosphorus column
 
 # Initial visualization of data
 ggplot(PeterPaul.nutrients.surface, aes(x = sampledate, y = tp_ug, color = lakename)) + 
@@ -78,6 +80,9 @@ Paul.nutrients.surface <- filter(PeterPaul.nutrients.surface, lakename == "Paul 
 
 # Run a Mann-Kendall test
 mk.test(Peter.nutrients.surface$tp_ug)
+#It is not looking at date information, it is just going sequentially
+#low p-value means that we reject the null hypothesis of "there is no trend over time"
+#z-score shows the sign and magnitude of trend. Positive z score shows positive trend. The larger the absolute value of z score, the more we are confident about a trend
 
 ```
 
@@ -88,17 +93,22 @@ Pettitt's test is also included in the `trend` package. This nonparametric test 
 ```{r}
 # Test for change point
 pettitt.test(Peter.nutrients.surface$tp_ug)
+#Small p-value means the model probably found a change point
+#Choose the largest change point out of all possible change points
 
 # Run separate Mann-Kendall for each change point
 mk.test(Peter.nutrients.surface$tp_ug[1:34])
 mk.test(Peter.nutrients.surface$tp_ug[35:132])
 
 # Is there a second change point?
-pettitt.test(Peter.nutrients.surface$tp_ug[35:132])
+pettitt.test(Peter.nutrients.surface$tp_ug[35:132]) 
+#The change point is 79 starting from 35th data, i.e. 35+79 = 114th data point is the change point
 
 # Run another Mann-Kendall for the second change point
 mk.test(Peter.nutrients.surface$tp_ug[35:113])
 mk.test(Peter.nutrients.surface$tp_ug[114:132])
+# Running mk test at three sections of data instead of whole data leads to higher p-value because of smaller sample size and also less variability within the segments
+#However, it is not recommended to over-parse the information into too many sections because when we parse too much, there is always a chance to find trend somewhere....
 
 # Run the same test for Paul Lake. 
 mk.test(Paul.nutrients.surface$tp_ug)
@@ -107,10 +117,15 @@ pettitt.test(Paul.nutrients.surface$tp_ug)
 # Add vertical lines to the original graph to represent change points
 ggplot(PeterPaul.nutrients.surface, aes(x = sampledate, y = tp_ug, color = lakename)) + 
   geom_point() +
+  geom_vline(xintercept = as.Date("1998-01-01"), color="black", linetype="dotted") + #When x-axis is date format, we need to tell ggplot it is a date by putting as.Date
+  geom_vline(xintercept = as.Date("1993-05-22"), color="black", linetype="dotted") + #Put any date between 34 and 35 entries, i.e. between May 19 to May 26
   scale_color_manual(values = c("#7fcdbb", "#253494"))
+?geom_line
 
+# Mann-Kendall test assumes that all data are independent of each other, therefore our dataset actually dont meet the assumption.
 ```
 ### Seasonal Mann-Kendall
+
 
 Like a **Mann-Kendall Test**, the **Seasonal Mann-Kendall Test**, or **Hirsch-Slack Test**, analyzes trends in response variables over time. It replaces the traditional Mann-Kendall when there are seasonal trends in a dataset that obscure the overall direction of the trend. It is important to note that "seasonal" does not necessarily equate to actual seasons but can represent any time period within which there are oscillating temporal trends. The test needs at least two seasons to operate.
 
@@ -123,11 +138,12 @@ USGS.flow.data.trimmed <- USGS.flow.data %>%
 
 # Visualize the data
 ggplot(USGS.flow.data.trimmed, aes(x = datetime, y = discharge.mean)) +
-  geom_point(size = 0.5, alpha = 0.5)
+  geom_point(size = 0.5, alpha = 0.5) +
+  scale_y_log10()
 ```
 
 ### Interpolation
-Some situations may require us to predict values for data points that fall within the time frame of our analyses but were not sampled. For instance, the `smk.test` function needs to take a time series format rather than a data frame, which cannot have any NAs. In this case, we will want to make an estimate of the missing values based on what we know about the dataset using a method called **interpolation.** There are several options for interpolation: 
+Some situations may require us to predict values for data points that fall within the time frame of our analyses but were not sampled. For instance, the `smk.test` function needs to take a time series format rather than a data frame, which cannot have any NAs (But our data has NAs). In this case, we will want to make an estimate of the missing values based on what we know about the dataset using a method called **interpolation.** There are several options for interpolation: 
 
   + **Means interpolation:** Defines values between sampled values as the mean value within a dataset. Uses the R function `aggregate`.
   
@@ -157,12 +173,14 @@ USGS.flow.data.interpolated$Date <- as.Date(USGS.flow.data.interpolated$Date,
 
 # Create a time series object
 USGS.flow.data.timeseries <- ts(USGS.flow.data.interpolated$Discharge, 
-                                start = c(2009, 1) ,frequency = 12)
+                                start = c(2009, 1) ,frequency = 12 ) #MONTHLY
 
 # Run a Seasonal Mann-Kendall test
 USGS.smktest <- smk.test(USGS.flow.data.timeseries)
 USGS.smktest
 summary(USGS.smktest)
+
+#Is there a significant trend in this season? i.e. in each month?
 ```
 
 Interpreting results of the Seasonal Mann-Kendall Test: 
