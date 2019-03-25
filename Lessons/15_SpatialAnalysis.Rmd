@@ -65,7 +65,7 @@ EPAair_PM_avg <- EPAair_PM25_NC2018_raw %>%
 
 #Plot the data using longitude and latitude as X and Y
 ggplot(EPAair_PM_avg, aes(x=SITE_LONGITUDE, y=SITE_LATITUDE)) + 
-  geom_point(aes(color=meanPM), size=4) #+ coord_equal() 
+  geom_point(aes(color=meanPM), size=4) + coord_equal() 
 ```
 
 This is more of a proof of concept than a useful map. We can sort of visualize spatial patterns in the data, but without context of scale or location, it's somewhat difficult. We can greatly improve this map with the help of some mapping packages for R...
@@ -145,14 +145,15 @@ Let's explore a few examples to familiarize ourselves with the `sf` package.
 First, let's convert our EPA dataframe to a simple features ("sf") dataframe and explore what's different:
 ```{r Create simple features from lat/lng fields}
 #Import the sf library
+#sf means simple features
 #install.packages('sf')
 library(sf)
 
-#Convert the dataset to a spatially enabled "sf" data frame
+#Convert the dataframe to a spatially enabled "sf" (spatial feature) data frame
 EPAair_PM_avg_sf <- st_as_sf(EPAair_PM_avg,coords = c('SITE_LONGITUDE','SITE_LATITUDE'),crs=4326)
 
 #Do you see a new column name?                
-colnames(EPAair_PM_avg_sf)
+colnames(EPAair_PM_avg_sf) #There is a new geometry column
 
 #What is the class of the values in the geometry column?
 class(EPAair_PM_avg_sf$geometry)
@@ -164,7 +165,9 @@ head(EPAair_PM_avg_sf)
 plot(EPAair_PM_avg_sf$geometry)
 
 #Plot everything
-plot(EPAair_PM_avg_sf)
+plot(EPAair_PM_avg_sf) 
+
+#mapview and plot is kind of interchangeable
 
 #Plot everything -- with MapView
 mapview(EPAair_PM_avg_sf)
@@ -188,7 +191,8 @@ With our EPA data now spatially enabled, we can perform spatial analysis with th
 #Buffer the Durham Armory point 0.1 degrees
 Durham_buffer <- EPAair_PM_avg_sf %>% 
   filter(Site.Name == 'Durham Armory') %>% 
-  st_buffer(0.1)
+  st_buffer(0.1) 
+#projection puts round earth on flat map. Imagine a light projecting a sphere to a wall. The light placement, closeness of light and type of light all lead to different projection style, thus there are many different projection systems/coordinate systems.
 
 #View the result
 mapView(Durham_buffer)
@@ -227,17 +231,19 @@ Some CRS, however, do not have an associated EPSG code, and for those, we can us
 ```{r Explore the CRS of our dataset}
 #Recall what the CRS is of our EPA dataset
 st_crs(EPAair_PM_avg_sf)
+
+#All coordinate system will have a datum to project shape of earth
 ```
 
 Now look that EPSG up on http://spatialreference.org. 
 * What coordinate system this EPSG is associated with?
 * What is the extent of this projection? 
 * Is this a geographic or projected coordinate system? 
-* What Datum does it use? 
+* What Datum does it use? WGS84
 
 
 ## SPATIAL ANALYSIS, Second attempt
-Applying our knowledge of CRS, let's transform our EPA sites from its native geographic coordinate system to a projected one, namely UTM Zone 17N and repeat what we attempted earlier. Then we'll revisit the buffer. 
+Applying our knowledge of CRS, let's transform our EPA sites from its native geographic coordinate system to a projected one, namely UTM Zone 17N and repeat what we attempted earlier. Then we'll revisit the buffer. UTM is popular in non-continental scale
 
 ```{r Transform our data to UTM 17 and buffer it}
 #Transform the entire EPA dataset to the UTM Zone 17N crs
@@ -258,6 +264,7 @@ Distances_to_DASite <- EPAair_PM_avg_sf_UTM %>%
   filter(Site.Name == 'Durham Armory') %>%    #Subset the Durham Armory site
   st_distance(EPAair_PM_avg_sf_UTM) %>%       #Compute distances to all other sites
   data.frame() %>%  t                         #Transpose the result
+#The X7 has value of zero, and it refers to Durham Armory itself
 
 #Add new field of distances to Durham Armory site
 EPAair_PM_avg_sf <- mutate(EPAair_PM_avg_sf,Dist2DA = Distances_to_DASite)
@@ -316,24 +323,34 @@ mapView(counties_sf)
 
 ```{r read HUCs shapefile}
 #Read the shapefile into an sf dataframe named "huc8_sf"
-huc8_sf <-   
+huc8_sf <-   st_read('./Data/Spatial/huc_250k_nc.shp')
 
 #Check the CRS
+st_crs(huc8_sf)
 
-
-#Exaimine the column names
-
+#Examine the column names
+names(huc8_sf)
+plot(huc8_sf$geometry)
+plot(huc8_sf$SUB)
 
 #View the data as a map
-
+mapview(huc8_sf)
+mapview(huc8_sf['SUB'],
+        graticule=st_crs(huc8_sf))
+plot(huc8_sf['SUB'],
+        graticule=st_crs(huc8_sf)) #With no crs specified, the graticule goes in cardinal direction which might not really reflect the orientation of the map
+plot(huc8_sf['SUB'],
+        graticule=st_crs(4326))
 ```
 
 > _Challenge_: Read in the NC 8-Digit HUC dataset again, but this time _filter_ the data so the result only includes the one with a HUC_NAME value of 'Upper Neuse'.
 
 ```{r Select the Upper Neuse HUC 8}
 #Read the shapefile into an sf dataframe
-upperNeuse_sf <-  
+upperNeuse_sf <-  st_read('./Data/Spatial/huc_250k_nc.shp') %>%
+  filter(HUC_NAME=='Upper Neuse')
   
+mapview(upperNeuse_sf)
 
 ```
 
@@ -342,7 +359,7 @@ upperNeuse_sf <-
 ```{r Dissolve all counties into a single feature}
 #Aggregate the data using group_by and summarize, just as you would a non-spatial dataframe
 state_sf <- counties_sf %>% 
-  group_by('STATEFP') %>% 
+  group_by(STATEFP) %>% 
   summarize(ALAND = sum(ALAND))
 
 #View the data
@@ -356,10 +373,13 @@ mapview(state_sf2)
 > Now you try it: Aggregate the HUC data on the SUB attribute, computing the sum of the "AREA" field and view the result. 
 
 ```{r Aggregate the HUC data on an attribute, saving as huc2_sf}
-huc2_sf <- 
+huc2_sf <- huc8_sf %>%
+  group_by(SUB) %>%
+  summarize(AREA=sum(AREA))
   
   
 mapview(huc2_sf)
+mapview(huc2_sf['AREA']) 
 ```
 
 
@@ -383,6 +403,7 @@ huc8s_WGS84 <- st_transform(huc8_sf,c=4326)
 huc2_WGS84<- st_transform(huc2_sf,c=4326)
 
 #Now plot with leaflet: no errors as all layers are in Leaflet's native CRS (WGS84)
+#leaflets deal with WGS84 well, but not UTM
 leaflet() %>% addTiles() %>% 
   addPolygons(data=counties_WGS84,weight=1,color='red') %>% 
   addPolygons(data=huc8s_WGS84,weight=1)
@@ -395,7 +416,7 @@ You can plot multiple spatial datasets just as we've done with tabular datasets.
 
 ### ggplot
 ```{r Vsualizing mulitple dataset with ggplot}
-#Wrong order
+#Wrong order, because maps overlap each other
 ggplot()  +
   geom_sf(data = EPAair_PM_avg_sf_UTM, color='white', size=2) +
   geom_sf(data = counties_sf_utm, aes(fill = ALAND), color = 'white')  +
@@ -413,13 +434,13 @@ ggplot() +
 ### leaflet
 Tip: See http://leaflet-extras.github.io/leaflet-providers/ for other basemaps
 ```{r Visualizing multiple datasets with leaflet}
-leaflet() %>% 
+leaflet() %>% #Create leaflet object
   addProviderTiles(providers$Esri.WorldShadedRelief) %>%  
   addPolygons(data = counties_WGS84, color = "orange", weight = 1, smoothFactor = 0.5,   
               opacity = 1.0, fillOpacity = 0.5,
               fillColor = ~colorQuantile("YlGnBu", ALAND)(ALAND)) %>% 
   addPolygons(data = huc2_WGS84, color=NA, weight = 2) %>% 
-  addMarkers(data=EPAair_wgs84,popup = ~as.character(`Site.Name`))
+  addMarkers(data=EPAair_wgs84,popup = ~as.character(`Site.Name`)) %>% addCircleMarkers(data=EPAair_wgs84,popup = ~as.character(`Site.Name`))
 
 ```
 
@@ -458,10 +479,19 @@ mapview(huc2_UTM_nc)
 > Exercise: Try subsetting the huc2_UTM dataset for SUB = 0302, then clipping counties with that subset.
 
 ```{r EXERCISE: Clip the counties dataset with the border of HUC 0302}
-huc0302_counties <- 
-  
+#my method
+huc0302_counties <- huc2_UTM_nc %>%
+  filter(SUB== '0302') %>% #the numbers have to be in quotes, because the SUB are not always numeric, but can be a factor
+  st_intersection(counties_sf_utm)
+
+#john's method
+huc0302 <- huc2_UTM_nc %>%
+  filter(SUB== '0302')
+huc0302_counties <- st_intersection(counties_sf_utm, huc0302)
+
+
 #Map the product, showing values by land area
-mapview(huc0302_counties['ALAND'])
+mapview(huc0302_counties['ALAND'], legend=FALSE)
 ```
 
 
@@ -473,6 +503,7 @@ To add more attributes to our spatial features, we can merge records just as we 
 demog_df <- read.csv('./Data/Spatial/NC_Demography.csv') %>% 
   mutate(FIPS = as.factor(FIPS))                                 #Convert the FIPS variable to a factor
 
+str(demog_df)
 #Join the two datasets using "GEOID" from the left dataset and "FIPS" from the right
 counties_sf_utm_join <- counties_sf_utm %>% 
   left_join(y = demog_df,by = c("GEOID" =  "FIPS"))
@@ -480,7 +511,7 @@ counties_sf_utm_join <- counties_sf_utm %>%
 #Check the dimensions
 dim(counties_sf_utm)
 dim(demog_df)
-dim(counties_sf_utm_join)
+dim(counties_sf_utm_join) #number of column = 10+15-1=24
 
 #Plot counties with a new variable
 ggplot() + 
@@ -521,17 +552,18 @@ myMap
 
 #Combine the centroids into one featue and construct a convex hull around them
 triCo_centroids_chull <- triCo_centroids %>% 
-  st_union() %>% 
-  st_convex_hull()
+  st_union() %>% #union command combines four rows of centroid into one row
+  st_convex_hull() 
 myMap <- myMap + geom_sf(data = triCo_centroids_chull, color = 'red', fill=NA)
 myMap
 
 #Combine the centroids into one feature and draw voronoi polygons
+#useful for interpolations
 triCo_centroids_voronoi <- triCo_centroids %>% 
   st_union() %>% 
   st_voronoi()
 myMap <- myMap + geom_sf(data = triCo_centroids_voronoi, color = 'purple', fill=NA)
-myMap
+myMap #From the map, you can decide that when a point is located in certain polygon, it should be under which counties
 
 ```
 
@@ -542,7 +574,7 @@ userLat = 36.0045442
 userLng = -78.9426381
 
 #Create a simple features point geometry from the point
-theSite_sfp <- st_point(c(userLng,userLat))
+theSite_sfp <- st_point(c(userLng,userLat)) #sfp = spatial feature point, has geometry but dont know where is the coordinate reference system
 
 #Create a simple features column from the point geometry object
 theSite_sfc <- st_sfc(theSite_sfp, crs = 4326)
@@ -551,6 +583,7 @@ theSite_sfc <- st_sfc(theSite_sfp, crs = 4326)
 theSite_sfc_transformed <- st_transform(theSite_sfc, crs = st_crs(counties_sf_utm))
 
 #Create a boolean mask 
+#intersects finds what features in counties_sf_utm intersects the polygon in theSite_sfc_transformed
 resultMask <- st_intersects(counties_sf_utm, 
                             theSite_sfc_transformed,
                             sparse = FALSE) #The `sparse` option returns a Boolean mask
@@ -560,6 +593,7 @@ selCounties <- counties_sf_utm[resultMask,]
 
 #Map the results
 mapView(counties_sf[resultMask,])
+mapView(selCounties)
 
 ```
 > Questions: how might we use the `st_buffer` function to show all counties within 30km of the site?
